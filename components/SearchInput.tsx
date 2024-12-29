@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { router, usePathname } from "expo-router";
+import { useRouter } from "expo-router";
 import { View, TouchableOpacity, Image, TextInput, Alert } from "react-native";
 
 import { icons } from "../constants";
@@ -9,9 +9,8 @@ type SearchInputProps = {
 };
 
 const SearchInput: React.FC<SearchInputProps> = ({ initialQuery = "" }) => {
-  const pathname = usePathname();
+  const router = useRouter(); // useRouter hook for navigation
   const [query, setQuery] = useState(initialQuery);
-
   const handleSearch = () => {
     if (query.trim() === "") {
       Alert.alert(
@@ -21,11 +20,8 @@ const SearchInput: React.FC<SearchInputProps> = ({ initialQuery = "" }) => {
       return;
     }
 
-    if (pathname.startsWith("/search")) {
-      router.setParams({ query });
-    } else {
-      // router.push(`/search/${query}`);
-    }
+    // Navigate to the dynamic route /[query]/query
+    router.push(`/query/${query}`);
   };
 
   return (

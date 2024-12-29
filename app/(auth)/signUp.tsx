@@ -19,12 +19,26 @@ const SignUp = () => {
     password: "",
   });
 
-  useEffect(() => {
-    createUser()
-  }, []);
-
-  const submit = ()=>{
-    createUser()
+  const submit = async ()=>{
+    if(!form.username || !form.email || !form.password){
+      Alert.alert("Please Fill in All fields");
+      return;
+    }
+    setSubmitting(true)
+    try {
+      const result = await createUser(
+        form.email,
+        form.password,
+        form.username
+      )
+      router.replace('/home')
+    } catch (error : any) {
+      throw new Error(error)
+      Alert.alert('Error',error.message)
+    }
+    finally{
+      setSubmitting(false)
+    }
   }
 
 

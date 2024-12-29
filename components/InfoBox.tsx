@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 
 type InfoBoxProps = {
-  title: string;
+  title: string | number;
   subtitle: string;
   containerStyles?: string; // Optional Tailwind classes or custom styles
   titleStyles?: string; // Optional Tailwind classes or custom styles

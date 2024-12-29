@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-            "bundleIdentifier": "com.prime.aora" 
+      "bundleIdentifier": "com.prime.aora"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +33,13 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
         }
       ]
     ],

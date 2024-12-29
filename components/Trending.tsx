@@ -1,82 +1,72 @@
 import React, { useState } from "react";
-import { ResizeMode, Video } from "expo-av";
-import * as Animatable from "react-native-animatable";
 import {
+  View,
+  Text,
   FlatList,
-  Image,
-  ImageBackground,
   TouchableOpacity,
+  ImageBackground,
+  Image,
   ListRenderItemInfo,
 } from "react-native";
+import * as Animatable from "react-native-animatable";
+import { icons } from "@/constants";
+import { VideoView, useVideoPlayer } from "expo-video"; // Import from expo-video
 
-import { icons } from "../constants";
-
-// Zoom animations
+// Corrected animation definitions
 const zoomIn = {
-  0: {
-    scale: 0.9,
-  },
-  1: {
-    scale: 1,
-  },
+  0: { scale: 0.9 },
+  1: { scale: 1.2 },
 };
 
 const zoomOut = {
-  0: {
-    scale: 1,
-  },
-  1: {
-    scale: 0.9,
-  },
+  0: { scale: 1.2 },
+  1: { scale: 0.9 },
 };
 
-type Post = {
-  $id: string;
-  video: string;
-  thumbnail: string;
-};
-
+// TrendingItem component
 type TrendingItemProps = {
-  activeItem: string;
-  item: Post;
+  activeItem: LatestPost | null;
+  item: LatestPost;
 };
 
 const TrendingItem: React.FC<TrendingItemProps> = ({ activeItem, item }) => {
   const [play, setPlay] = useState(false);
 
+  // Initialize video player using useVideoPlayer
+  const player = useVideoPlayer(item.video, (player) => {
+    player.loop = true;
+    player.play();
+  });
+
   return (
     <Animatable.View
       className="mr-5"
-      animation={activeItem === item.$id ? zoomIn : zoomOut}
+      animation={activeItem?.$id === item.$id ? zoomIn : zoomOut} // Compare by ID
       duration={500}
     >
       {play ? (
-        <Video
-          source={{ uri: item.video }}
-          className="w-52 h-72 rounded-[33px] mt-3 bg-white/10"
-          resizeMode={ResizeMode.CONTAIN}
-          useNativeControls
-          shouldPlay
-          onPlaybackStatusUpdate={(status) => {
-            if (status.didJustFinish) {
-              setPlay(false);
-            }
+        <VideoView
+          style={{
+            width: "100%",
+            height: 240,
+            borderRadius: 16,
+            marginTop: 12,
           }}
+          player={player}
+          allowsFullscreen
+          allowsPictureInPicture
         />
       ) : (
         <TouchableOpacity
-          className="relative flex justify-center items-center"
+          className="relative justify-center items-center"
           activeOpacity={0.7}
           onPress={() => setPlay(true)}
         >
           <ImageBackground
-            source={{
-              uri: item.thumbnail,
-            }}
-            className="w-52 h-72 rounded-[33px] my-5 overflow-hidden shadow-lg shadow-black/40"
+            source={{ uri: item.thumbnail }}
+            className="w-52 h-72 rounded-3xl my-5 overflow-hidden shadow-lg shadow-black/40"
             resizeMode="cover"
           />
-
           <Image
             source={icons.play}
             className="w-12 h-12 absolute"
@@ -88,36 +78,52 @@ const TrendingItem: React.FC<TrendingItemProps> = ({ activeItem, item }) => {
   );
 };
 
+// Adjusted LatestPost type for Trending
+type LatestPost = {
+  $id: string;
+  title: string;
+  thumbnail: string;
+  video: string;
+  users: {
+    username: string;
+    avatar: string;
+  };
+};
+
 type TrendingProps = {
-  posts: Post[];
+  posts: LatestPost[]; // Use LatestPost instead of Post
 };
 
 const Trending: React.FC<TrendingProps> = ({ posts }) => {
-  const [activeItem, setActiveItem] = useState(posts[0]?.$id);
+  const [activeItem, setActiveItem] = useState<LatestPost | null>(posts[0]);
 
+  // Correct typing for viewableItemsChanged
   const viewableItemsChanged = ({
     viewableItems,
   }: {
-    viewableItems: ListRenderItemInfo<Post>[];
+    viewableItems: Array<{ key: string }>;
   }) => {
     if (viewableItems.length > 0) {
-      setActiveItem(viewableItems[0].key);
+      const activePost = posts.find(
+        (item) => item.$id === viewableItems[0].key
+      );
+      if (activePost) setActiveItem(activePost);
     }
   };
 
   return (
     <FlatList
       data={posts}
-      horizontal
-      keyExtractor={(item) => item.$id}
-      renderItem={({ item }) => (
-        <TrendingItem activeItem={activeItem} item={item} />
+      keyExtractor={(item) => item.$id} // Use $id from LatestPost
+      renderItem={({ item }: ListRenderItemInfo<LatestPost>) => (
+        <TrendingItem
+          activeItem={activeItem}
+          item={item} // Pass the single item, not the whole posts array
+        />
       )}
+      horizontal
       onViewableItemsChanged={viewableItemsChanged}
-      viewabilityConfig={{
-        itemVisiblePercentThreshold: 70,
-      }}
-      contentOffset={{ x: 170 }}
+      viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
     />
   );
 };

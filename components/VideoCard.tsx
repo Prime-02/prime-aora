@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { ResizeMode, Video } from "expo-av";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { icons } from "../constants";
+import { useVideoPlayer, VideoView } from "expo-video";
+
 
 // Type for the props expected by the VideoCard component
 type VideoCardProps = {
@@ -20,6 +21,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
   video,
 }) => {
   const [play, setPlay] = useState(false);
+  const player = useVideoPlayer(video, (player) => {
+    player.loop = true;
+    player.play();
+  });
 
   return (
     <View className="flex flex-col items-center px-4 mb-14">
@@ -55,18 +60,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
       </View>
 
       {play ? (
-        <Video
-          source={{ uri: video }}
-          className="w-full h-60 rounded-xl mt-3"
-          resizeMode={ResizeMode.CONTAIN}
-          useNativeControls
-          shouldPlay
-          onPlaybackStatusUpdate={(status) => {
-            if (status.didJustFinish) {
-              setPlay(false);
-            }
-          }}
-        />
+        player ? (
+          <VideoView className="w-full h-60 rounded-xl mt-3" player={player} />
+        ) : (
+          <Text className="text-white mt-3">Loading video...</Text>
+        )
       ) : (
         <TouchableOpacity
           activeOpacity={0.7}
@@ -78,7 +76,6 @@ const VideoCard: React.FC<VideoCardProps> = ({
             className="w-full h-full rounded-xl mt-3"
             resizeMode="cover"
           />
-
           <Image
             source={icons.play}
             className="w-12 h-12 absolute"

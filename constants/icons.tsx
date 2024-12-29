@@ -1,3 +1,5 @@
+import { ImageSourcePropType } from "react-native";
+
 // Importing the icons
 import bookmark from "../assets/icons/bookmark.png";
 import home from "../assets/icons/home.png";
@@ -15,36 +17,36 @@ import play from "../assets/icons/play.png";
 
 // Define the type for the icons
 type IconSet = {
-  play: string;
-  bookmark: string;
-  home: string;
-  plus: string;
-  profile: string;
-  leftArrow: string;
-  menu: string;
-  search: string;
-  upload: string;
-  rightArrow: string;
-  logout: string;
-  eyeHide: string;
-  eye: string;
+  play: ImageSourcePropType;
+  bookmark: ImageSourcePropType;
+  home: ImageSourcePropType;
+  plus: ImageSourcePropType;
+  profile: ImageSourcePropType;
+  leftArrow: ImageSourcePropType;
+  menu: ImageSourcePropType;
+  search: ImageSourcePropType;
+  upload: ImageSourcePropType;
+  rightArrow: ImageSourcePropType;
+  logout: ImageSourcePropType;
+  eyeHide: ImageSourcePropType;
+  eye: ImageSourcePropType;
 };
 
-// Export the icons as a default object of the defined type
+// Explicitly cast imported images as `ImageSourcePropType`
 const icons: IconSet = {
-  play,
-  bookmark,
-  home,
-  plus,
-  profile,
-  leftArrow,
-  menu,
-  search,
-  upload,
-  rightArrow,
-  logout,
-  eyeHide,
-  eye,
+  play: play as ImageSourcePropType,
+  bookmark: bookmark as ImageSourcePropType,
+  home: home as ImageSourcePropType,
+  plus: plus as ImageSourcePropType,
+  profile: profile as ImageSourcePropType,
+  leftArrow: leftArrow as ImageSourcePropType,
+  menu: menu as ImageSourcePropType,
+  search: search as ImageSourcePropType,
+  upload: upload as ImageSourcePropType,
+  rightArrow: rightArrow as ImageSourcePropType,
+  logout: logout as ImageSourcePropType,
+  eyeHide: eyeHide as ImageSourcePropType,
+  eye: eye as ImageSourcePropType,
 };
 
 export default icons;
