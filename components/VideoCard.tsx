@@ -23,8 +23,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [play, setPlay] = useState(false);
   const player = useVideoPlayer(video, (player) => {
     player.loop = true;
-    player.play();
+      player.play();
   });
+
+  console.log(play);
+  
 
   return (
     <View className="flex flex-col items-center px-4 mb-14">
@@ -61,7 +64,13 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
       {play ? (
         player ? (
-          <VideoView className="w-full h-60 rounded-xl mt-3" player={player} />
+          <View className="w-full h-60">
+            <VideoView
+              className=" rounded-xl mt-3"
+              nativeControls
+              player={player}
+            />
+          </View>
         ) : (
           <Text className="text-white mt-3">Loading video...</Text>
         )

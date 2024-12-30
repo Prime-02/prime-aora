@@ -33,10 +33,17 @@ const TrendingItem: React.FC<TrendingItemProps> = ({ activeItem, item }) => {
   const [play, setPlay] = useState(false);
 
   // Initialize video player using useVideoPlayer
-  const player = useVideoPlayer(item.video, (player) => {
+ const player = useVideoPlayer(item.video, (player) => {
     player.loop = true;
-    player.play();
+    if (play) {
+      player.play();
+    } else{
+      return null
+    }
+    
+    
   });
+
 
   return (
     <Animatable.View

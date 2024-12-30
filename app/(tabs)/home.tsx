@@ -57,9 +57,7 @@ const Home = () => {
         className="flex-1"
         data={posts}
         keyExtractor={(item) => item.$id.toString()}
-        renderItem={({ item }) =>{
-          console.log(item.video);
-          
+        renderItem={({ item }) =>{          
           return (
           <VideoCard
             title={item.title}
@@ -79,7 +77,9 @@ const Home = () => {
                 <Text className="text-white font-pmedium text-sm">
                   Welcome Back
                 </Text>
-                <Text className="text-3xl font-psemibold text-white">
+                <Text 
+                onPress={()=>router.push(`/query/video`)}
+                className="text-3xl font-psemibold text-white">
                   {user?.username ? user.username : "User"}
                 </Text>
               </View>
