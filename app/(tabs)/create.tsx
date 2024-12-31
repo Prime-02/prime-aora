@@ -11,11 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CustomButton, FormField } from "@/components";
 import { icons } from "@/constants";
 import * as ImagePicker from "expo-image-picker";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { useVideoPlayer, VideoPlayer, VideoView } from "expo-video";
 import { router } from "expo-router";
 import { CreateVideo } from "@/lib/appwrite";
 import { useGlobalContext } from "@/context/GlobalProvider";
 import * as VideoThumbnails from "expo-video-thumbnails";
+import { useEvent } from "expo";
 
 type FileType = {
   mimeType: string;
@@ -44,21 +45,17 @@ const Create = () => {
 
   const [videoDuration, setVideoDuration] = useState(0);
 
+
   const player = useVideoPlayer(form.video, (player) => {
     player.loop = true;
-    player.pause();
+    player.play();
     player.staysActiveInBackground = false
-    console.log(player.duration);
-    console.log("Player:", player);
-    
-
-    
-
     // Set video duration once it's available
-    if (player.duration && player.duration !== videoDuration) {
-      setVideoDuration(Math.floor(player.duration / 1000)); // Convert to seconds if needed
-    }
   });
+  if (player.duration && player.duration !== videoDuration) {
+    setVideoDuration(Math.floor(player.duration / 1000)); 
+  }
+  
 
 
   
@@ -153,6 +150,8 @@ const Create = () => {
       console.warn(e);
     }
   };
+
+
 
   return (
     <SafeAreaView className="bg-primary h-full">

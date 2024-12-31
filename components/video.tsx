@@ -10,7 +10,9 @@ export default function VideoScreen({ url, containerStyle }: VideoScreenProps) {
   const player = useVideoPlayer(url, (player) => {
     player.loop = true;
     player.play();
+    
   });
+  
 
   return (
     <View

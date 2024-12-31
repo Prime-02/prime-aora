@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { icons } from "../constants";
-import { useVideoPlayer, VideoView } from "expo-video";
 import VideoScreen from "@/components/video";
 import PopupMenu from "./PopUpMenu";
 
