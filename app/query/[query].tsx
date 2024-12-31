@@ -34,8 +34,8 @@ const Query = () => {
             title={item.title}
             thumbnail={item.thumbnail}
             video={item.video} 
-            avatar={item.users.avatar}
-            creator={item.users.username}
+            avatar={item.users?.avatar}
+            creator={item.users?.username}
           />
         )}
         ListHeaderComponent={

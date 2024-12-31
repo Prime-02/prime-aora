@@ -22,12 +22,12 @@ const TabIcon: React.FC<TabIconProps> = ({ icon, color, name, focused }) => {
         tintColor={color}
         className="w-6 h-6"
       />
-      {/* <Text
-        className={`${focused ? "font-psemibold" : "font-pregular"} text-xs`}
+      <Text
+        className={`${focused ? "font-psemibold" : "font-pregular"} text-xs w-16 text-center`}
         style={{ color: color }}
       >
         {name}
-      </Text> */}
+      </Text>
     </View>
   );
 };
@@ -46,9 +46,12 @@ const TabLayout: React.FC = () => {
           tabBarShowLabel: false,
           tabBarStyle: {
             backgroundColor: "#161622",
-            borderTopWidth: 0,
+            borderTopWidth: 1,
             borderTopColor: "#232533",
+            display: "flex",
             height: 84,
+            alignItems: "center",
+            paddingTop: 20
           },
         }}
       >
@@ -68,15 +71,15 @@ const TabLayout: React.FC = () => {
           }}
         />
         <Tabs.Screen
-          name="bookmark"
+          name="favorite"
           options={{
-            title: "Bookmark",
+            title: "Favorite",
             headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 icon={icons.bookmark}
                 color={color}
-                name="Bookmark"
+                name="Favorite"
                 focused={focused}
               />
             ),

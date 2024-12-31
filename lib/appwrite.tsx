@@ -5,7 +5,9 @@ import {
   Client,
   Databases,
   ID,
+  ImageGravity,
   Query,
+  Storage,
 } from "react-native-appwrite";
 
 export const config = {
@@ -35,7 +37,7 @@ client
 const account = new Account(client);
 const avatar = new Avatars(client);
 const databases = new Databases(client);
-
+const storage = new Storage(client);
 // Define TypeScript types
 type CreateUserResponse = {
   accountId: string;
@@ -56,6 +58,7 @@ export const createUser = async (
   username: string
 ): Promise<CreateUserResponse> => {
   try {
+    // await account.deleteSession(`current`);
     const newAccount = await account.create(
       ID.unique(),
       email,
@@ -69,8 +72,6 @@ export const createUser = async (
 
     const avatarUrl = avatar.getInitials(username);
 
-    // Sign the user in to create a session
-    await account.deleteSession(`current`);
     await signIn(email, password);
 
     // Create a document for the user in the database
@@ -164,7 +165,8 @@ export const getAllPosts = async (): Promise<Post[]> => {
   try {
     const posts = await databases.listDocuments<Post>(
       databaseId,
-      videoCollectionId
+      videoCollectionId,
+      [Query.orderDesc("$createdAt")] // Add a comma here and correctly structure the query
     );
     return posts.documents;
   } catch (error: unknown) {
@@ -281,7 +283,8 @@ export const getUserPosts = async (userId: string): Promise<UserPost[]> => {
     const posts = await databases.listDocuments(
       databaseId,
       videoCollectionId,
-      [Query.equal("users", userId)] // Add a comma here and correctly structure the query
+      [Query.orderDesc("$createdAt"), Query.equal("users", userId)] // Add a comma here and correctly structure the
+      // query
     );
     return posts.documents as UserPost[];
   } catch (error: unknown) {
@@ -298,5 +301,186 @@ export const signOut = async () => {
     return session;
   } catch (error: any) {
     throw new Error(error);
+  }
+};
+
+type FileType = {
+  mimeType: string;
+  name: string;
+  size: number;
+  uri: string;
+};
+
+// Define the form type used in CreateVideo
+type CreateVideoForm = {
+  video: FileType | null;
+  thumbnail: FileType | null;
+  title: string;
+  prompt: string;
+  userId: string;
+};
+
+// Refactored getFilePreview function to account for ImageGravity type
+export const getFilePreview = async (
+  fileId: string,
+  type: "video" | "image"
+): Promise<string> => {
+  let fileUrl: URL | undefined;
+  try {
+    if (type === "video") {
+      fileUrl = storage.getFileView(storageId, fileId);
+    } else if (type === "image") {
+      // Adjust the 'gravity' parameter to use a valid ImageGravity value
+      fileUrl = storage.getFilePreview(
+        storageId,
+        fileId,
+        2000,
+        2000,
+        ImageGravity.Top,
+        100
+      ); // 'center' as an example
+    } else {
+      if (!(fileUrl instanceof URL)) {
+        throw new Error("Invalid file URL returned");
+      }
+    }
+
+    if (!fileUrl) throw new Error("File URL not found");
+    return fileUrl.toString(); // Ensure the URL is converted to a string
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error(
+        "An unknown error occurred while fetching the file preview"
+      );
+    }
+  }
+};
+
+// Refactor uploadFile with correct asset type
+export const uploadFile = async (
+  file: FileType | null,
+  type: "video" | "image"
+): Promise<string | undefined> => {
+  if (!file) {
+    return undefined;
+  }
+
+  // Ensure the file object has all required properties: name, size, uri
+  const { mimeType, name, size, uri } = file;
+  const asset = { name, type: mimeType, size, uri }; // Create the asset object with all required properties
+
+  try {
+    const uploadedFile = await storage.createFile(
+      storageId,
+      ID.unique(),
+      asset
+    );
+    const fileUrl = await getFilePreview(uploadedFile.$id, type);
+    return fileUrl;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error("An unknown error occurred while uploading the file");
+    }
+  }
+};
+
+// Refactor CreateVideo function with proper typing
+export const CreateVideo = async (form: CreateVideoForm): Promise<any> => {
+  try {
+    const [thumbnailUrl, videoUrl] = await Promise.all([
+      uploadFile(form.thumbnail, "image"),
+      uploadFile(form.video, "video"),
+    ]);
+
+    const newPost = await databases.createDocument(
+      databaseId,
+      videoCollectionId,
+      ID.unique(),
+      {
+        title: form.title,
+        thumbnail: thumbnailUrl,
+        video: videoUrl,
+        prompt: form.prompt,
+        users: form.userId,
+      }
+    );
+
+    return newPost;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    } else {
+      throw new Error("An unknown error occurred while creating the video");
+    }
+  }
+};
+
+
+export const AddToFav = async (
+  fileId: string,
+  userId: string,
+  databaseId: string,
+  videoCollectionId: string
+): Promise<void> => {
+  try {
+    // Retrieve the document
+    const document = await databases.getDocument(
+      databaseId,
+      videoCollectionId,
+      fileId
+    );
+
+    // Update the document with the new `liked` array
+    await databases.updateDocument(databaseId, videoCollectionId, fileId, {
+      liked: userId,
+    });
+  } catch (error: any) {
+    console.error("Error adding video to favorites:", error);
+    throw new Error(error.message || "Unknown error occurred");
+  }
+};
+
+
+type FavDocument = {
+  $id: string;
+  $collectionId: string;
+  $databaseId: string;
+  $createdAt: string;
+  $updatedAt: string;
+  $permissions: string[]; // Adjust if `$permissions` has a different structure
+};
+
+type favDocUser = {
+  username: string;
+  avatar: string;
+};
+
+type favPosts = FavDocument & {
+  users: favDocUser;
+  title: string;
+  description?: string;
+  thumbnail: string;
+  video: string;
+};
+
+export const getfavPosts = async (userId: string): Promise<favPosts[]> => {
+  try {
+    // Correct the query syntax here by fixing the missing comma
+    const posts = await databases.listDocuments(
+      databaseId,
+      videoCollectionId,
+      [Query.orderDesc("$createdAt"), Query.equal("liked", userId)] // Add a comma here and correctly structure the
+      // query
+    );
+    return posts.documents as favPosts[];
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("An unexpected error occurred.");
   }
 };

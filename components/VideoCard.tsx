@@ -2,15 +2,23 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { icons } from "../constants";
 import { useVideoPlayer, VideoView } from "expo-video";
+import VideoScreen from "@/components/video";
+import PopupMenu from "./PopUpMenu";
 
+type MenuOptionItem = {
+  label: string; // Text to display
+  onSelect: () => void; // Function to call when selected
+  disabled?: boolean; // Whether the option is disabled
+  textStyle?: object; // Optional custom text styles
+};
 
-// Type for the props expected by the VideoCard component
 type VideoCardProps = {
   title: string;
   creator: string;
   avatar: string;
   thumbnail: string;
   video: string;
+  menuOptions?: MenuOptionItem[]; 
 };
 
 const VideoCard: React.FC<VideoCardProps> = ({
@@ -19,14 +27,10 @@ const VideoCard: React.FC<VideoCardProps> = ({
   avatar,
   thumbnail,
   video,
+  menuOptions= [],
 }) => {
-  const [play, setPlay] = useState(false);
-  const player = useVideoPlayer(video, (player) => {
-    player.loop = true;
-      player.play();
-  });
+  const [play, setPlay] = useState<string | null>(null);
 
-  console.log(play);
   
 
   return (
@@ -58,26 +62,24 @@ const VideoCard: React.FC<VideoCardProps> = ({
         </View>
 
         <View className="pt-2">
-          <Image source={icons.menu} className="w-5 h-5" resizeMode="contain" />
+          <PopupMenu
+            triggerText=""
+            options={menuOptions}
+          />
         </View>
       </View>
 
-      {play ? (
-        player ? (
-          <View className="w-full h-60">
-            <VideoView
-              className=" rounded-xl mt-3"
-              nativeControls
-              player={player}
-            />
-          </View>
-        ) : (
-          <Text className="text-white mt-3">Loading video...</Text>
-        )
+      {play === video ? (
+        <View className="w-full h-60 mt-12">
+          <VideoScreen
+            url={video}
+            containerStyle="w-full h-60 rounded-xl mt-3 overflow-hidden"
+          />
+        </View>
       ) : (
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => setPlay(true)}
+          onPress={() => setPlay(video)}
           className="w-full h-60 rounded-xl mt-3 relative flex justify-center items-center"
         >
           <Image

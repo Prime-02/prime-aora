@@ -5,8 +5,9 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Image,
+  RefreshControl,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { EmptyState, InfoBox, VideoCard } from "@/components";
 import { router, useLocalSearchParams } from "expo-router";
 import useAppwrite from "@/lib/useAppwrite";
@@ -16,7 +17,15 @@ import { icons } from "@/constants";
 
 const Profile = () => {
   const { user, setUser, setIsLoggedIn } = useGlobalContext();
-  const { data: posts } = useAppwrite(() => getUserPosts(user.$id));
+    const [refreshing, setRefreshing] = useState(false);
+  
+  const { data: posts, refetch } = useAppwrite(() => getUserPosts(user.$id));
+
+   const onRefresh = async () => {
+     setRefreshing(true);
+     await refetch();
+     setRefreshing(false);
+   };
 
   const logOut = async() => {
     await signOut();
@@ -40,6 +49,9 @@ const Profile = () => {
             creator={item.users.username}
           />
         )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ListHeaderComponent={
           <View className="w-full justify-center items-center mt-6 mb-12 px-4">
             <TouchableOpacity

@@ -1,25 +1,26 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   FlatList,
   TouchableOpacity,
   ImageBackground,
   Image,
   ListRenderItemInfo,
+  Button,
+  Text,
 } from "react-native";
 import * as Animatable from "react-native-animatable";
 import { icons } from "@/constants";
-import { VideoView, useVideoPlayer } from "expo-video"; // Import from expo-video
+import VideoScreen from "@/components/video";
 
 // Corrected animation definitions
 const zoomIn = {
   0: { scale: 0.9 },
-  1: { scale: 1.2 },
+  1: { scale: 1 },
 };
 
 const zoomOut = {
-  0: { scale: 1.2 },
+  0: { scale: 1 },
   1: { scale: 0.9 },
 };
 
@@ -27,47 +28,40 @@ const zoomOut = {
 type TrendingItemProps = {
   activeItem: LatestPost | null;
   item: LatestPost;
+  play: string | null;
+  setPlay: (value: string | null) => void;
 };
 
-const TrendingItem: React.FC<TrendingItemProps> = ({ activeItem, item }) => {
-  const [play, setPlay] = useState(false);
-
-  // Initialize video player using useVideoPlayer
- const player = useVideoPlayer(item.video, (player) => {
-    player.loop = true;
-    if (play) {
-      player.play();
-    } else{
-      return null
-    }
-    
-    
-  });
-
-
+const TrendingItem: React.FC<TrendingItemProps> = ({
+  activeItem,
+  item,
+  play,
+  setPlay,
+}) => {
   return (
     <Animatable.View
-      className="mr-5"
+      className="mr-1"
       animation={activeItem?.$id === item.$id ? zoomIn : zoomOut} // Compare by ID
       duration={500}
     >
-      {play ? (
-        <VideoView
-          style={{
-            width: "100%",
-            height: 240,
-            borderRadius: 16,
-            marginTop: 12,
-          }}
-          player={player}
-          allowsFullscreen
-          allowsPictureInPicture
-        />
+      {play === item?.$id ? (
+        <View className="relative">
+          <VideoScreen
+            url={item.video}
+            containerStyle="w-52 overflow-hidden  h-72 rounded-[33px]  bg-white/10"
+          />
+          <Text
+            className="absolute left-4 top-2 text-white px-2 text-xs py-1 border-secondary-100 border rounded-full"
+            onPress={() => setPlay(null)}
+          >
+            X
+          </Text>
+        </View>
       ) : (
         <TouchableOpacity
           className="relative justify-center items-center"
           activeOpacity={0.7}
-          onPress={() => setPlay(true)}
+          onPress={() => setPlay(item?.$id)}
         >
           <ImageBackground
             source={{ uri: item.thumbnail }}
@@ -98,11 +92,12 @@ type LatestPost = {
 };
 
 type TrendingProps = {
-  posts: LatestPost[]; // Use LatestPost instead of Post
+  posts: LatestPost[];
 };
 
 const Trending: React.FC<TrendingProps> = ({ posts }) => {
   const [activeItem, setActiveItem] = useState<LatestPost | null>(posts[0]);
+  const [play, setPlay] = useState<string | null>(null); // Moved play state here
 
   // Correct typing for viewableItemsChanged
   const viewableItemsChanged = ({
@@ -115,6 +110,7 @@ const Trending: React.FC<TrendingProps> = ({ posts }) => {
         (item) => item.$id === viewableItems[0].key
       );
       if (activePost) setActiveItem(activePost);
+
     }
   };
 
@@ -125,12 +121,15 @@ const Trending: React.FC<TrendingProps> = ({ posts }) => {
       renderItem={({ item }: ListRenderItemInfo<LatestPost>) => (
         <TrendingItem
           activeItem={activeItem}
-          item={item} // Pass the single item, not the whole posts array
+          item={item}
+          play={play} // Pass play state
+          setPlay={setPlay} // Pass setPlay function
         />
       )}
       horizontal
       onViewableItemsChanged={viewableItemsChanged}
       viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
+      // scrollEnabled={play === null} // Disable scrolling if a video is playing
     />
   );
 };

@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
 import "../global.css";
 import GlobalProvider from "@/context/GlobalProvider";
+import { MenuProvider } from "react-native-popup-menu";
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,6 +34,7 @@ export default function Layout() {
   if (!fontsLoaded && error) return null;
 
   return (
+    <MenuProvider>
     <GlobalProvider>
       <Stack
         initialRouteName="index"
@@ -42,5 +45,6 @@ export default function Layout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
         </GlobalProvider>
+          </MenuProvider>
   );
 }

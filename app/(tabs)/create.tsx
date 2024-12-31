@@ -6,25 +6,35 @@ import {
   Image,
   Alert,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CustomButton, FormField } from "@/components";
 import { icons } from "@/constants";
-import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { router } from "expo-router";
+import { CreateVideo } from "@/lib/appwrite";
+import { useGlobalContext } from "@/context/GlobalProvider";
+import * as VideoThumbnails from "expo-video-thumbnails";
 
-
+type FileType = {
+  mimeType: string;
+  name: string;
+  size: number;
+  uri: string;
+};
 
 // Define the types for video and thumbnail
-interface FormData {
+type FormData = {
   title: string;
-  video: { uri: string } | null;
-  thumbnail: { uri: string } | null;
+  video: FileType | null;
+  thumbnail: FileType | null;
   prompt: string;
-}
+};
 
 const Create = () => {
   const [uploading, setUploading] = useState(false);
+  const { user } = useGlobalContext();
   const [form, setForm] = useState<FormData>({
     title: "",
     video: null,
@@ -32,48 +42,134 @@ const Create = () => {
     prompt: ``,
   });
 
+  const [videoDuration, setVideoDuration] = useState(0);
+
   const player = useVideoPlayer(form.video, (player) => {
     player.loop = true;
-    player.play();
+    player.pause();
+    player.staysActiveInBackground = false
+    console.log(player.duration);
+    console.log("Player:", player);
+    
+
+    
+
+    // Set video duration once it's available
+    if (player.duration && player.duration !== videoDuration) {
+      setVideoDuration(Math.floor(player.duration / 1000)); // Convert to seconds if needed
+    }
   });
 
 
+  
+
+  // To generate a random timestamp within the video duration
+  const getRandomTimestamp = () => {
+    if (videoDuration > 0) {
+      return Math.floor(Math.random() * videoDuration); // Generate random seconds within duration
+    }
+    return 0;
+  };
+
+  useEffect(() => {
+    if (form.video) {
+      // generateThumbnail();
+      getRandomTimestamp();
+    }
+  }, [form.video]);
+
   const openPicker = async (selectType: string) => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type:
-        selectType === "image"
-          ? ["image/png", "image/jpg"]
-          : ["video/mp4", "video/gif"],
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: selectType === `video` ? "videos" : `images`,
+      aspect: [4, 3],
+      quality: 1,
     });
 
-    if (!result.canceled) {
-      if (selectType === "image" && result.assets[0]?.uri) {
-        setForm({
-          ...form,
-          thumbnail: { uri: result.assets[0].uri },
-        });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const fileType: FileType = {
+        uri: asset.uri,
+        name: asset.fileName || "unknown",
+        mimeType: asset.mimeType || "",
+        size: asset.fileSize || 0,
+      };
+
+      if (selectType === "image") {
+        setForm({ ...form, thumbnail: fileType });
+      } else if (selectType === "video") {
+        setForm({ ...form, video: fileType });
       }
-      if (selectType === "video" && result.assets[0]?.uri) {
-        setForm({
-          ...form,
-          video: { uri: result.assets[0].uri },
-        });
-      }
-    } else {
-      setTimeout(() => {
-        Alert.alert("Document Picked", JSON.stringify(result, null, 2));
-      }, 100);
     }
   };
 
-  const submit = () => {
-    // Handle the submit logic here
+  const submit = async () => {
+    if (!form.title || !form.thumbnail || !form.video) {
+      return Alert.alert("Fill in all fields");
+    }
+
+    setUploading(true);
+
+    try {
+      await CreateVideo({
+        ...form,
+        userId: user?.$id || "", // Ensure `userId` is a string
+      });
+
+      Alert.alert("Success", "Post Uploaded Successfully!");
+      setForm({
+        title: "",
+        video: null,
+        thumbnail: null,
+        prompt: "",
+      });
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const generateThumbnail = async () => {
+    if (!form.video) {
+      return console.warn("No video selected");
+    }
+
+    try {
+      const { uri } = await VideoThumbnails.getThumbnailAsync(form.video.uri, {
+        time: videoDuration, // Thumbnail time in milliseconds
+      });
+
+      // Dynamically set the thumbnail name based on the video name
+      const videoName = form.video.name.replace(/\.[^/.]+$/, ""); // Remove the file extension
+      const thumbnailFile: FileType = {
+        uri,
+        name: `${videoName}_thumbnail.jpg`, // Add "_thumbnail" suffix
+        mimeType: "image/jpeg",
+        size: 0, // Optional unless you calculate the size
+      };
+
+      setForm({ ...form, thumbnail: thumbnailFile });
+    } catch (e) {
+      console.warn(e);
+    }
   };
 
   return (
     <SafeAreaView className="bg-primary h-full">
       <ScrollView className="px-4 my-6">
         <Text className="text-2xl text-white font-psemibold">Upload Video</Text>
+        {(form.title || form.video || form.thumbnail || form.prompt) && (
+          <Text
+          onPress={()=>{
+              setForm({
+                title: "",
+                video: null,
+                thumbnail: null,
+                prompt: "",
+              });
+          }}
+          className="text-base text-right text-secondary-100  w-full font-pmedium">Clear</Text>
+        )}
         <FormField
           value={form.title}
           title="Video Title"
@@ -85,12 +181,22 @@ const Create = () => {
           <Text className="text-base text-white font-pmedium">
             Upload Video
           </Text>
-          <TouchableOpacity onPress={() => openPicker("video")}>
+          <TouchableOpacity
+            className="min-w-80 w-full mx-auto h-80 rounded-3xl flex justify-center items-center"
+            onPress={() => {
+              openPicker("video");
+            }}
+          >
             {form.video ? (
-              <VideoView 
-              player={player}
-                // source={{ uri: form.video.uri }}
-                className="w-full h-64 rounded-2xl"
+              <VideoView
+                player={player}
+                allowsFullscreen
+                allowsPictureInPicture
+                startsPictureInPictureAutomatically
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
               />
             ) : (
               <View className="w-full h-40 px-4 bg-black-100 rounded-2xl border border-black-200 flex justify-center items-center">
@@ -131,6 +237,15 @@ const Create = () => {
               </View>
             )}
           </TouchableOpacity>
+          {form.video && (
+            <CustomButton
+              handlePress={() => generateThumbnail()}
+              textStyles=" "
+              isLoading={false}
+              title="Generate Thumbnail with AI"
+              containerStyles="text-base text-gray-100 font-pmedium mt-3"
+            />
+          )}
         </View>
         <FormField
           value={form.prompt}

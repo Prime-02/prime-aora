@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/appwrite";
+import { router } from "expo-router";
 import React, {
   createContext,
   useContext,
@@ -41,23 +42,24 @@ const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    getCurrentUser().then((res) => {
-      if (res) {
-        setIsLoggedIn(true);
-        setUser(res);
-      } else {
-        setIsLoggedIn(false)
-        setUser(null)
-      }
-    })
-    .catch((error) =>{
+    getCurrentUser()
+      .then((res) => {
+        if (res) {
+          setIsLoggedIn(true);
+          setUser(res);
+        } else {
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      })
+      .catch((error) => {
         console.log(error);
-    })
-    .finally(()=>{
-        setIsLoading(false)
-    })
-    // console.log(user);
-    
+          router.replace("/signIn");
+
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   return (
